@@ -96,7 +96,7 @@ local ConfigurationFolder = RayfieldFolder.."/Configurations"
 local ConfigurationExtension = ".rfld"
 local settingsTable = {
 	General = {
-
+		rayfieldOpen = {Type = 'bind', Value = 'K', Name = 'Rayfield Keybind'},
 	},
 	System = {
 	}
