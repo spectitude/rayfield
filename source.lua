@@ -175,18 +175,22 @@ local function loadSettings()
 		if next(file) ~= nil then
 			for categoryName, categoryTable in file do
 				for settingName, setting in categoryTable do
-					local settingType = typeof(settingsTable[categoryName][settingName].Value)
+					local default = settingsTable[categoryName] and settingsTable[categoryName][settingName]
+					if not default then continue end
+					local settingType = typeof(default.Value)
 					if not (settingType == typeof(setting.Value)) then
 						warn("Rayfield | Error parsing settings file. '"..settingName.."' must be a "..settingType)
 						continue
 					end
-					settingsTable[categoryName][settingName].Value = setting.Value
+					default.Value = setting.Value
 				end
 			end
 		end
 		for categoryName, categoryTable in settingsTable do
 			for settingName, setting in categoryTable do
-				setting.Element:Set(getSetting(categoryName, settingName))
+				if setting.Element then
+					setting.Element:Set(getSetting(categoryName, settingName))
+				end
 			end
 		end
 		settingsInitialized = true
