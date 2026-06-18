@@ -608,26 +608,31 @@ do
 			ensureFolder(RayfieldFolder)
 			ensureFolder(AssetPath)
 
-			local function nextMissing()
+			local attempted = {}
+			local function nextToFetch()
 				for id, _ in assetFiles do
-					if not isfile(AssetPath.."/"..tostring(id)..".png") then
+					if not attempted[id] and not isfile(AssetPath.."/"..tostring(id)..".png") then
 						return id
 					end
 				end
 				return nil
 			end
 
-			if nextMissing() then
+			if nextToFetch() then
 				task.spawn(function()
 					while true do
-						local id = nextMissing()
+						local id = nextToFetch()
 						if not id then break end
-						writefile(AssetPath.."/"..tostring(id)..".png", requestFunc({Url = assetFiles[id], Method = "GET"}).Body)
+						local ok, res = pcall(requestFunc, {Url = assetFiles[id], Method = "GET"})
+						if ok and type(res) == "table" and type(res.Body) == "string" and #res.Body > 0 then
+							pcall(writefile, AssetPath.."/"..tostring(id)..".png", res.Body)
+						end
+						attempted[id] = true
 						task.wait()
 					end
 				end)
 
-				while nextMissing() do
+				while nextToFetch() do
 					task.wait(0.1)
 				end
 			end
