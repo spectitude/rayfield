@@ -52,15 +52,16 @@ local function loadWithTimeout(url: string, timeout: number?): ...any
 	return if success then result else nil
 end
 
+local _getgenv = rawget(_G, "getgenv")
 local requestsDisabled = false
 local customAssetId = nil
 local secureMode = false
-if getgenv then
-	local ok, result = pcall(function() return getgenv().DISABLE_RAYFIELD_REQUESTS end)
+if _getgenv then
+	local ok, result = pcall(function() return _getgenv().DISABLE_RAYFIELD_REQUESTS end)
 	if ok and result then requestsDisabled = true end
-	local ok2, result2 = pcall(function() return getgenv().RAYFIELD_ASSET_ID end)
+	local ok2, result2 = pcall(function() return _getgenv().RAYFIELD_ASSET_ID end)
 	if ok2 and type(result2) == "number" then customAssetId = result2 end
-	local ok3, result3 = pcall(function() return getgenv().RAYFIELD_SECURE end)
+	local ok3, result3 = pcall(function() return _getgenv().RAYFIELD_SECURE end)
 	if ok3 and result3 then secureMode = true end
 end
 
