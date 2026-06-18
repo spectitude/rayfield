@@ -90,7 +90,7 @@ local function secureNotify(wType, title, content)
 	end)
 end
 local InterfaceBuild = 'UU2NX'
-local Release = "Build 1.749"
+local Release = "Build 1.746"
 local RayfieldFolder = "Rayfield"
 local ConfigurationFolder = RayfieldFolder.."/Configurations"
 local ConfigurationExtension = ".rfld"
@@ -174,23 +174,24 @@ local function loadSettings()
 		end
 
 		if next(file) ~= nil then
-			for categoryName, categoryTable in file do
-				for settingName, setting in categoryTable do
-					local default = settingsTable[categoryName] and settingsTable[categoryName][settingName]
-					if not default then continue end
-					local settingType = typeof(default.Value)
-					if not (settingType == typeof(setting.Value)) then
-						warn("Rayfield | Error parsing settings file. '"..settingName.."' must be a "..settingType)
-						continue
+			for categoryName, settingCategory in pairs(settingsTable) do
+				if file[categoryName] then
+					for settingName, setting in pairs(settingCategory) do
+						if file[categoryName][settingName] then
+							setting.Value = file[categoryName][settingName].Value
+							setting.Element:Set(getSetting(categoryName, settingName))
+						end
 					end
-					default.Value = setting.Value
 				end
 			end
-		end
-		for categoryName, categoryTable in settingsTable do
-			for settingName, setting in categoryTable do
-				if setting.Element then
-					setting.Element:Set(getSetting(categoryName, settingName))
+		else
+			for settingName, settingValue in overriddenSettings do
+				local split = string.split(settingName, ".")
+				assert(#split == 2, "Rayfield | Invalid overridden setting name: " .. settingName)
+				local categoryName = split[1]
+				local settingNameOnly = split[2]
+				if settingsTable[categoryName] and settingsTable[categoryName][settingNameOnly] then
+					settingsTable[categoryName][settingNameOnly].Element:Set(settingValue)
 				end
 			end
 		end
@@ -608,31 +609,25 @@ do
 			ensureFolder(AssetPath)
 
 			local function nextMissing()
-			local attempted = {}
-			local function nextToFetch()
 				for id, _ in assetFiles do
-					if not attempted[id] and not isfile(AssetPath.."/"..tostring(id)..".png") then
+					if not isfile(AssetPath.."/"..tostring(id)..".png") then
 						return id
 					end
 				end
 				return nil
 			end
 
-			if nextToFetch() then
+			if nextMissing() then
 				task.spawn(function()
 					while true do
-						local id = nextToFetch()
+						local id = nextMissing()
 						if not id then break end
-						local ok, res = pcall(requestFunc, {Url = assetFiles[id], Method = "GET"})
-						if ok and type(res) == "table" and type(res.Body) == "string" and #res.Body > 0 then
-							pcall(writefile, AssetPath.."/"..tostring(id)..".png", res.Body)
-						end
-						attempted[id] = true
+						writefile(AssetPath.."/"..tostring(id)..".png", requestFunc({Url = assetFiles[id], Method = "GET"}).Body)
 						task.wait()
 					end
 				end)
 
-				while nextToFetch() do
+				while nextMissing() do
 					task.wait(0.1)
 				end
 			end
