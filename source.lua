@@ -176,9 +176,8 @@ local function loadSettings()
 			for categoryName, categoryTable in file do
 				for settingName, setting in categoryTable do
 					local default = settingsTable[categoryName] and settingsTable[categoryName][settingName]
-					if not default then continue end -- ignore keys not in settingsTable (old/renamed settings)
+					if not default then continue end
 					local settingType = typeof(default.Value)
-					-- Make sure setting has the correct type
 					if not (settingType == typeof(setting.Value)) then
 						warn("Rayfield | Error parsing settings file. '"..settingName.."' must be a "..settingType)
 						continue
@@ -187,7 +186,6 @@ local function loadSettings()
 				end
 			end
 		end
-		-- Apply the actual setting value to UI elements
 		for categoryName, categoryTable in settingsTable do
 			for settingName, setting in categoryTable do
 				if setting.Element then
@@ -609,7 +607,6 @@ do
 			ensureFolder(AssetPath)
 
 			local function nextMissing()
-			-- skip ids we've already tried so a dead asset can't loop the loader forever
 			local attempted = {}
 			local function nextToFetch()
 				for id, _ in assetFiles do
@@ -625,12 +622,10 @@ do
 					while true do
 						local id = nextToFetch()
 						if not id then break end
-						-- a failed request can hand back a nil/empty Body — never pass that to writefile
 						local ok, res = pcall(requestFunc, {Url = assetFiles[id], Method = "GET"})
 						if ok and type(res) == "table" and type(res.Body) == "string" and #res.Body > 0 then
 							pcall(writefile, AssetPath.."/"..tostring(id)..".png", res.Body)
 						end
-						-- mark after the attempt so the poll waits for real downloads but still skips a dead asset
 						attempted[id] = true
 						task.wait()
 					end
